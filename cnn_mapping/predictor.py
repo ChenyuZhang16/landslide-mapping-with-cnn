@@ -92,8 +92,12 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     assert os.path.isfile(hs_path)
     assert os.path.isfile(slope_path)
 
-    assert os.path.isfile(post_image_path)
-    assert os.path.isfile(pre_image_path)
+    assert os.path.isfile(post_image_path["B2"])
+    assert os.path.isfile(post_image_path["B3"])
+    assert os.path.isfile(post_image_path["B4"])
+    assert os.path.isfile(pre_image_path["B2"])
+    assert os.path.isfile(pre_image_path["B3"])
+    assert os.path.isfile(pre_image_path["B4"])
 
     assert os.path.isfile(roi_path)
 
@@ -104,11 +108,14 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     nscn, npix = binaryMask.shape
 
     # generate a mask from no data file
-    if os.path.isfile(no_data_mask):
-        maskImage = 1 - open_and_rescale_to_baseResolution(
-            img_path=no_data_mask, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    if no_data_mask is None:
+        maskImage = np.ones(shape=(nscn, npix))
     else:
-        maskImage = np.zeros(shape=(nscn, npix))
+        if os.path.isfile(no_data_mask):
+            maskImage = 1 - open_and_rescale_to_baseResolution(
+                img_path=no_data_mask, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        else:
+            maskImage = np.zeros(shape=(nscn, npix))
 
     # append in mask file where test area Image == 0
     maskImage[binaryMask == 0] = 0
@@ -135,10 +142,27 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     validLocXY = [currLoc for currLoc in locXY if tileHelper.isValidTile(
         maskImage, imageSize, currLoc, threshold=0.50)]
 
-    postImage = open_and_rescale_to_baseResolution(
-        img_path=post_image_path, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    preImage = open_and_rescale_to_baseResolution(
-        img_path=pre_image_path,  shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    # postImage = open_and_rescale_to_baseResolution(
+    #     img_path=post_image_path, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    postImage_sub = dict()
+    postImage_sub["B2"] = open_and_rescale_to_baseResolution(
+        img_path=post_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    postImage_sub["B3"] = open_and_rescale_to_baseResolution(
+        img_path=post_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    postImage_sub["B4"] = open_and_rescale_to_baseResolution(
+        img_path=post_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    # preImage = open_and_rescale_to_baseResolution(
+    #     img_path=pre_image_path,  shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    preImage_sub = dict()
+    preImage_sub["B2"] = open_and_rescale_to_baseResolution(
+        img_path=pre_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    preImage_sub["B3"] = open_and_rescale_to_baseResolution(
+        img_path=pre_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    preImage_sub["B4"] = open_and_rescale_to_baseResolution(
+        img_path=pre_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+
+    postImage = np.dstack([postImage_sub["B4"], postImage_sub["B3"], postImage_sub["B2"]])
+    preImage = np.dstack([preImage_sub["B4"], preImage_sub["B3"], preImage_sub["B2"]])
 
     hs = open_and_rescale_to_baseResolution(
         img_path=hs_path,    shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
@@ -283,15 +307,36 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
 
 if __name__ == "__main__":
 
+    # raw_data_dict = dict()
+
+    # raw_data_dict["dem_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030.tif"
+    # raw_data_dict["hs_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030_HILLSHADE.tif"
+    # raw_data_dict["slope_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030_SLOPE.tif"
+
+    # raw_data_dict["post_image_path"] = "RawData/AOI_E_S2-S2/fromOptical/JIUZ_POST_S2_RGB_010_UINT8.tif"
+    # raw_data_dict["pre_image_path"] = "RawData/AOI_E_S2-S2/fromOptical/JIUZ_PRE_S2_RGB_010_UINT8.tif"
+    # raw_data_dict["no_data_mask"] = "RawData/AOI_E_S2-S2/noDataMask/SNOW_CLOUD_MASK_010.tif"
+
+    # detect_landslides(model_path="M_ALL_006.hdf5", output_path="Mapping_results",
+    #                   raw_data_dict=raw_data_dict, roi_path="RawData/AOI_E_S2-S2/testBoundary/Test_006.tif", debug=True)
+
     raw_data_dict = dict()
 
-    raw_data_dict["dem_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030.tif"
-    raw_data_dict["hs_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030_HILLSHADE.tif"
-    raw_data_dict["slope_path"] = "RawData/AOI_E_S2-S2/DEM/DEM_030_SLOPE.tif"
+    raw_data_dict["dem_path"] = "Japan_data/dem/download.DSM.tif"
+    raw_data_dict["hs_path"] = "Japan_data/hs/download.hillshade.tif"
+    raw_data_dict["slope_path"] = "Japan_data/slope/download.slope.tif"
 
-    raw_data_dict["post_image_path"] = "RawData/AOI_E_S2-S2/fromOptical/JIUZ_POST_S2_RGB_010_UINT8.tif"
-    raw_data_dict["pre_image_path"] = "RawData/AOI_E_S2-S2/fromOptical/JIUZ_PRE_S2_RGB_010_UINT8.tif"
-    raw_data_dict["no_data_mask"] = "RawData/AOI_E_S2-S2/noDataMask/SNOW_CLOUD_MASK_010.tif"
+    raw_data_dict["post_image_path"] = dict()
+    raw_data_dict["post_image_path"]["B2"] = "Japan_data/post-event/download.B2.tif"
+    raw_data_dict["post_image_path"]["B3"] = "Japan_data/post-event/download.B3.tif"
+    raw_data_dict["post_image_path"]["B4"] = "Japan_data/post-event/download.B4.tif"
 
-    detect_landslides(model_path="M_ALL_006.hdf5", output_path="Mapping_results",
-                      raw_data_dict=raw_data_dict, roi_path="RawData/AOI_E_S2-S2/testBoundary/Test_006.tif", debug=True)
+    raw_data_dict["pre_image_path"] = dict()
+    raw_data_dict["pre_image_path"]["B2"] = "Japan_data/pre-event/download.B2.tif"
+    raw_data_dict["pre_image_path"]["B3"] = "Japan_data/pre-event/download.B3.tif"
+    raw_data_dict["pre_image_path"]["B4"] = "Japan_data/pre-event/download.B4.tif"
+
+    raw_data_dict["no_data_mask"] = None
+
+    detect_landslides(model_path="M_ALL_006.hdf5", output_path="Mapping_results_jp",
+                      raw_data_dict=raw_data_dict, roi_path="Japan_data/aoi.tif", debug=True)
