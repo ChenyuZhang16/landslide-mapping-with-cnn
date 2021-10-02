@@ -1,4 +1,4 @@
-from cnn_mapping.predictor import detect_landslides
+from cnn_landslide_mapping.predictor import detect_landslides
 
 
 

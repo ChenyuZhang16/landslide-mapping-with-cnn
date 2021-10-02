@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
-from cnn_mapping.Utils import gdalCommonUtils as gutils
-from cnn_mapping.Utils import IO as io
-from cnn_mapping.Utils import tileHelpers as tileHelper
+from cnn_landslide_mapping.Utils import gdalCommonUtils as gutils
+from cnn_landslide_mapping.Utils import IO as io
+from cnn_landslide_mapping.Utils import tileHelpers as tileHelper
 
 import tensorflow as tf
 from tensorflow.keras import models
