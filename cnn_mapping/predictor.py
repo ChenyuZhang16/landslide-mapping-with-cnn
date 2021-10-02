@@ -49,10 +49,6 @@ def normalizeArray(image):
 
     return image
 
-
-stack = []
-
-
 def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, roi_path: str, debug: bool = False):
 
     if debug:
@@ -69,7 +65,8 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
             logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+            print(len(gpus), "Physical GPUs,", len(
+                logical_gpus), "Logical GPUs")
         except RuntimeError as e:
             # Memory growth must be set before GPUs have been initialized
             print(e)
@@ -92,12 +89,19 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     assert os.path.isfile(hs_path)
     assert os.path.isfile(slope_path)
 
-    assert os.path.isfile(post_image_path["B2"])
-    assert os.path.isfile(post_image_path["B3"])
-    assert os.path.isfile(post_image_path["B4"])
-    assert os.path.isfile(pre_image_path["B2"])
-    assert os.path.isfile(pre_image_path["B3"])
-    assert os.path.isfile(pre_image_path["B4"])
+    if isinstance(post_image_path, str):
+        assert os.path.isfile(post_image_path)
+    else:
+        assert os.path.isfile(post_image_path["B2"])
+        assert os.path.isfile(post_image_path["B3"])
+        assert os.path.isfile(post_image_path["B4"])
+
+    if isinstance(pre_image_path, str):
+        assert os.path.isfile(pre_image_path)
+    else:
+        assert os.path.isfile(pre_image_path["B2"])
+        assert os.path.isfile(pre_image_path["B3"])
+        assert os.path.isfile(pre_image_path["B4"])
 
     assert os.path.isfile(roi_path)
 
@@ -142,27 +146,40 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     validLocXY = [currLoc for currLoc in locXY if tileHelper.isValidTile(
         maskImage, imageSize, currLoc, threshold=0.50)]
 
-    # postImage = open_and_rescale_to_baseResolution(
-    #     img_path=post_image_path, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    postImage_sub = dict()
-    postImage_sub["B2"] = open_and_rescale_to_baseResolution(
-        img_path=post_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    postImage_sub["B3"] = open_and_rescale_to_baseResolution(
-        img_path=post_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    postImage_sub["B4"] = open_and_rescale_to_baseResolution(
-        img_path=post_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    # preImage = open_and_rescale_to_baseResolution(
-    #     img_path=pre_image_path,  shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    preImage_sub = dict()
-    preImage_sub["B2"] = open_and_rescale_to_baseResolution(
-        img_path=pre_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    preImage_sub["B3"] = open_and_rescale_to_baseResolution(
-        img_path=pre_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
-    preImage_sub["B4"] = open_and_rescale_to_baseResolution(
-        img_path=pre_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    if isinstance(post_image_path, str):
+        postImage = open_and_rescale_to_baseResolution(
+            img_path=post_image_path, shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    else:
+        postImage_sub = dict()
+        postImage_sub["B2"] = open_and_rescale_to_baseResolution(
+            img_path=post_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        postImage_sub["B3"] = open_and_rescale_to_baseResolution(
+            img_path=post_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        postImage_sub["B4"] = open_and_rescale_to_baseResolution(
+            img_path=post_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        
+        postImage = np.dstack(
+            [postImage_sub["B4"], postImage_sub["B3"], postImage_sub["B2"]])
+    
+    if isinstance(pre_image_path, str):
+        preImage = open_and_rescale_to_baseResolution(
+            img_path=pre_image_path,  shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+    else:
+        preImage_sub = dict()
+        preImage_sub["B2"] = open_and_rescale_to_baseResolution(
+            img_path=pre_image_path["B2"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        preImage_sub["B3"] = open_and_rescale_to_baseResolution(
+            img_path=pre_image_path["B3"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
+        preImage_sub["B4"] = open_and_rescale_to_baseResolution(
+            img_path=pre_image_path["B4"], shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
 
-    postImage = np.dstack([postImage_sub["B4"], postImage_sub["B3"], postImage_sub["B2"]])
-    preImage = np.dstack([preImage_sub["B4"], preImage_sub["B3"], preImage_sub["B2"]])
+        preImage = np.dstack(
+            [preImage_sub["B4"], preImage_sub["B3"], preImage_sub["B2"]])
+
+    # scale the images
+    scale = 2**8 / np.max([postImage.max(), preImage.max()])
+    postImage = (scale * postImage).astype(np.uint8)
+    preImage = (scale * preImage).astype(np.uint8)
 
     hs = open_and_rescale_to_baseResolution(
         img_path=hs_path,    shape=(nscn, npix), bbox=bbox, crop_to_bbox=bbox)
@@ -205,6 +222,7 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
                     bbox_inches="tight")
 
     # Prepare model input
+    stack = []
 
     stack.append(postImage)
     stack.append(preImage)
@@ -215,6 +233,9 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
 
     testImage = np.nan_to_num(testImage)
     testImage = normalizeArray(testImage)
+
+    assert testImage.max() <= 1
+    assert testImage.min() >= -1
 
     inputChannel = testImage.shape[2]
 
@@ -258,13 +279,9 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     rasterPath = output_path + \
         '/Predict_LS_HighConf_{}.tif'.format(str(threshold))
     gutils.writeNumpyArr2Geotiff(
-        rasterPath, predictMask, newGeoT, proj, GDAL_dtype=gdal.GDT_Byte, noDataValue=0)
+        rasterPath, predictMask_highConf, newGeoT, proj, GDAL_dtype=gdal.GDT_Byte, noDataValue=0)
 
     showMask = True
-
-    # Zoom to Extent
-    xmin, xmax = 0, 1250
-    ymin, ymax = -2000, -750
 
     LSForDisplay = predictMask_highConf.copy()
     LSForDisplay = np.float32(LSForDisplay)
@@ -274,17 +291,17 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     if debug:
         fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(15, 15), dpi=300)
 
-        ax[0].imshow(postImage[ymin:ymax, xmin:xmax])
+        ax[0].imshow(postImage)
         ax[0].set_title('Sentinel-2 RGB (POST-EVENT)')
         ax[0].axis('off')
 
-        ax[1].imshow(postImage[ymin:ymax, xmin:xmax], alpha=0.35)
-        ax[1].imshow(LSForDisplay[ymin:ymax, xmin:xmax],
+        ax[1].imshow(postImage, alpha=0.35)
+        ax[1].imshow(LSForDisplay,
                      alpha=1, cmap='bwr', vmin=0, vmax=1)
         ax[1].set_title('MAPPED LANDSLIDE IN RED')
         ax[1].axis('off')
 
-        ax[2].imshow(preImage[ymin:ymax, xmin:xmax])
+        ax[2].imshow(preImage)
         ax[2].set_title('Sentinel-2 RGB (PRE-EVENT)')
         ax[2].axis('off')
 
@@ -293,11 +310,11 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
             maskForDisplay = np.float32(maskForDisplay)
             maskForDisplay[maskForDisplay == 0] = np.nan
 
-            ax[0].imshow(maskForDisplay[ymin:ymax, xmin:xmax],
+            ax[0].imshow(maskForDisplay,
                          alpha=0.35, cmap='cool', vmin=0, vmax=1)
-            ax[1].imshow(maskForDisplay[ymin:ymax, xmin:xmax],
+            ax[1].imshow(maskForDisplay,
                          alpha=0.35, cmap='cool', vmin=0, vmax=1)
-            ax[2].imshow(maskForDisplay[ymin:ymax, xmin:xmax],
+            ax[2].imshow(maskForDisplay,
                          alpha=0.35, cmap='cool', vmin=0, vmax=1)
 
     fig.tight_layout()
@@ -327,16 +344,16 @@ if __name__ == "__main__":
     raw_data_dict["slope_path"] = "Japan_data/slope/download.slope.tif"
 
     raw_data_dict["post_image_path"] = dict()
-    raw_data_dict["post_image_path"]["B2"] = "Japan_data/post-event/download.B2.tif"
-    raw_data_dict["post_image_path"]["B3"] = "Japan_data/post-event/download.B3.tif"
-    raw_data_dict["post_image_path"]["B4"] = "Japan_data/post-event/download.B4.tif"
+    raw_data_dict["post_image_path"]["B2"] = "Japan_data/post-event/download.B2_uint8.tif"
+    raw_data_dict["post_image_path"]["B3"] = "Japan_data/post-event/download.B3_uint8.tif"
+    raw_data_dict["post_image_path"]["B4"] = "Japan_data/post-event/download.B4_uint8.tif"
 
     raw_data_dict["pre_image_path"] = dict()
-    raw_data_dict["pre_image_path"]["B2"] = "Japan_data/pre-event/download.B2.tif"
-    raw_data_dict["pre_image_path"]["B3"] = "Japan_data/pre-event/download.B3.tif"
-    raw_data_dict["pre_image_path"]["B4"] = "Japan_data/pre-event/download.B4.tif"
+    raw_data_dict["pre_image_path"]["B2"] = "Japan_data/pre-event/download.B2_uint8.tif"
+    raw_data_dict["pre_image_path"]["B3"] = "Japan_data/pre-event/download.B3_uint8.tif"
+    raw_data_dict["pre_image_path"]["B4"] = "Japan_data/pre-event/download.B4_uint8.tif"
 
     raw_data_dict["no_data_mask"] = None
 
     detect_landslides(model_path="M_ALL_006.hdf5", output_path="Mapping_results_jp",
-                      raw_data_dict=raw_data_dict, roi_path="Japan_data/aoi.tif", debug=True)
+                      raw_data_dict=raw_data_dict, roi_path="Japan_data/aoi_S2.tif", debug=True)
