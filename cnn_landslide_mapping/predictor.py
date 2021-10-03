@@ -234,6 +234,7 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
 
         fig.savefig(os.path.join(output_path, "raw_data_plot.png"),
                     bbox_inches="tight")
+        plt.close()
 
     # Prepare model input
     stack = []
@@ -334,6 +335,7 @@ def detect_landslides(model_path: str, output_path: str, raw_data_dict: dict, ro
     fig.tight_layout()
     fig.savefig(os.path.join(output_path, "prediction_plot.png"),
                 bbox_inches="tight")
+    plt.close()
 
 
 if __name__ == "__main__":
