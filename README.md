@@ -1,3 +1,45 @@
+# Introduction
+
+This repository is adapted from the [work](https://github.com/nprksh/landslide-mapping-with-cnn) of Nikhil Prakash, Andrea Manconi and Simon Loew. The perpose of this repository is to provided an AI routine for detecting landslide regions using satellite images, for participating the 2021 NASA Space Apps challenge. Please see this [repository](https://github.com/ChenyuZhang16/nasa-space-app-sentry) about how this routine is used for the challenge.
+
+# Example
+
+Please see [this jupyter notebook](LS_mapping.ipynb) for example usage.
+
+# Installation
+
+## Requirements
+
+- numpy
+- matplotlib
+- tqdm
+- tensorflow
+- osgeo
+- Open CV
+
+## How to install
+
+Using `pip`:
+
+``` bash
+pip install git+https://github.com/ChenyuZhang16/landslide-mapping-with-cnn.git
+```
+
+From source:
+``` bash
+pip install --editable .
+```
+
+# Bug report
+
+Because this is a forked repository, please report bugs/issues to this [repository](https://github.com/ChenyuZhang16/nasa-space-app-sentry/issues).
+
+## = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+## Below are the readme from the original repository
+
+## = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
 # A new strategy to map landslides with a generalized convolutional neural network
 Code repository for https://www.nature.com/articles/s41598-021-89015-8
 
